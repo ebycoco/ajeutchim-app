@@ -1,12 +1,26 @@
 
-# Mon projet React Native
+# AJEUTCHIM App
+
+Application mobile React Native pour la gestion de l’association AJEUTCHIM :  
+– Inscription / connexion sécurisée (Firebase)  
+– Chat, profil, paiements, documents & élections  
+
+---
 
 ## 📦 Installation
 
 \`\`\`bash
 git clone url
 cd AJEUTCHIM
-npm install         # ou yarn install
+
+# Avec npm
+
+npm install
+
+# Ou avec Yarn
+
+yarn install
+
 \`\`\`
 
 ## Chatgpt
