@@ -1,18 +1,28 @@
-{
-  "name": "ajeutchim",
-  "version": "1.0.0",
-  "main": "index.ts",
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "postinstall": "patch-package"
-  },
-  "resolutions": {
-    "@react-native-async-storage/async-storage": "^2.1.2"
-  },
-  "dependencies": {
+
+# Mon projet React Native
+
+## 📦 Installation
+
+\`\`\`bash
+git clone url
+cd AJEUTCHIM
+npm install         # ou yarn install
+\`\`\`
+
+## Chatgpt
+
+url:<https://chatgpt.com/c/6813287f-1b44-8008-bad6-f4633dda077d#textdoc_id>
+
+## 🚀 Lancement
+
+\`\`\`bash
+npx EXPO start
+npx react-native run-android   # ou run-ios
+\`\`\`
+
+## 🔧 Dépendances
+
+"dependencies": {
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-native-community/datetimepicker": "^8.3.0",
     "@react-navigation/bottom-tabs": "^7.3.11",
@@ -42,5 +52,11 @@
     "patch-package": "^8.0.0",
     "typescript": "~5.8.3"
   },
-  "private": true
-}
+
+## 🛠️ Scripts utiles
+
+- \`npm start\` : lance Metro
+- \`npm run android\` / \`npm run ios\` : compile sur émulateur
+- \`npm test\` : lance la suite de tests (si configuré)
+
+## 📝 Licence
