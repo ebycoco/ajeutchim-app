@@ -13,6 +13,8 @@ import {
   Image,
   ImageBackground,
   StatusBar,
+  ScrollView,
+  Keyboard
 } from 'react-native';
 import { getPin, deletePin } from '../../utils/secureStore';
 import { auth } from '../../config/firebase';
@@ -22,42 +24,38 @@ const logo = require('../../../assets/logo.png');
 
 export default function PinLock({ navigation }: any) {
   const [storedPin, setStoredPin] = useState<string | null>(null);
-  const [inputPin, setInputPin] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [inputPin, setInputPin]   = useState('');
+  const [loading, setLoading]     = useState(false);
 
   useEffect(() => {
     (async () => {
       const pin = await getPin();
       setStoredPin(pin);
-      if (!pin) {
-        navigation.replace('SetPin');
-      }
+      if (!pin) navigation.replace('SetPin');
     })();
   }, []);
 
   const handleCheckPin = () => {
     if (loading) return;
     setLoading(true);
+    Keyboard.dismiss();
     try {
       if (inputPin === storedPin) {
         navigation.replace('Home');
       } else {
         Alert.alert('Erreur', 'PIN incorrect');
       }
-    } catch (error: any) {
-      Alert.alert('Erreur de connexion', error.message);
+    } catch (err: any) {
+      Alert.alert('Erreur de connexion', err.message);
     } finally {
       setLoading(false);
     }
-
   };
 
   const handleResetPin = async () => {
-    // Supprime le PIN stocké et redirige vers la connexion
     await deletePin();
     await auth.signOut();
     navigation.replace('Auth', { screen: 'SignIn' });
-
   };
 
   if (storedPin === null) {
@@ -72,44 +70,53 @@ export default function PinLock({ navigation }: any) {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.flex}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
       <StatusBar backgroundColor="#020066" barStyle="light-content" />
       <ImageBackground source={backgroundImage} style={styles.background}>
         <View style={styles.overlay} />
-        <View style={styles.innerContainer}>
-          <Image source={logo} style={styles.logo} />
+        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+          <View style={styles.innerContainer}>
+            <Image source={logo} style={styles.logo} />
 
-          <View style={styles.card}>
-            <Text style={styles.title}>Déverrouillage</Text>
-            <Text style={styles.subtitle}>Veuillez entrer votre code PIN</Text>
+            <View style={styles.card}>
+              <Text style={styles.title}>Déverrouillage</Text>
+              <Text style={styles.subtitle}>Veuillez entrer votre code PIN</Text>
 
-            <TextInput
-              style={styles.input}
-              placeholder="••••"
-              keyboardType="numeric"
-              maxLength={4}
-              secureTextEntry
-              onChangeText={setInputPin}
-              value={inputPin}
-              placeholderTextColor="#aaa"
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="••••"
+                keyboardType="numeric"
+                maxLength={4}
+                secureTextEntry
+                value={inputPin}
+                onChangeText={text => {
+                  setInputPin(text);
+                  if (text.length === 4) {
+                    handleCheckPin();
+                  }
+                }}
+                placeholderTextColor="#aaa"
+              />
 
-            <TouchableOpacity style={[styles.button, loading && { opacity: 0.7 }]} onPress={handleCheckPin}>
-              {loading ? (
-                <ActivityIndicator
-                  size="small"
-                  color="#020066"
-                />
-              ) : (
-                <Text style={styles.buttonText}>Déverrouiller</Text>
-              )}
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, loading && { opacity: 0.7 }]}
+                onPress={handleCheckPin}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#020066" />
+                ) : (
+                  <Text style={styles.buttonText}>Déverrouiller</Text>
+                )}
+              </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleResetPin}>
-              <Text style={styles.forgotPin}>PIN oublié ? Réinitialiser</Text>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={handleResetPin}>
+                <Text style={styles.forgotPin}>PIN oublié ? Réinitialiser</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </ImageBackground>
     </KeyboardAvoidingView>
   );
@@ -120,17 +127,18 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     resizeMode: 'cover',
+  },
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
+    padding: 20,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(2, 0, 102, 0.4)',
   },
   innerContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -187,6 +195,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 12,
+    marginBottom: 16,
   },
   buttonText: {
     color: '#fff',
@@ -194,7 +203,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   forgotPin: {
-    marginTop: 16,
     color: '#2e86de',
     textDecorationLine: 'underline',
   },

@@ -8,8 +8,12 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { DrawerNavigationProp } from '@react-navigation/drawer';
 
 type Candidate = {
   id: string;
@@ -59,6 +63,7 @@ const mockElections: Election[] = [
 ];
 
 export default function ElectionScreen() {
+  const navigation = useNavigation<DrawerNavigationProp<any>>();
   const isAdvisor = true;
   const [elections, setElections] = useState<Election[]>(mockElections);
   const [votedMap, setVotedMap] = useState<Record<string, string>>({});
@@ -157,8 +162,8 @@ export default function ElectionScreen() {
       </View>
       <Text style={styles.date}>{item.date}</Text>
       <Text style={styles.instructionText}>
-              Sélectionnez un candidat pour voter
-            </Text>
+        Sélectionnez un candidat pour voter
+      </Text>
       <FlatList
         data={item.candidates}
         keyExtractor={c => c.id}
@@ -176,19 +181,39 @@ export default function ElectionScreen() {
   );
 
   return (
-    
-    <FlatList
-      data={elections}
-      keyExtractor={e => e.id}
-      renderItem={renderElection}
-      contentContainerStyle={styles.list}
-      style={styles.container}
-    />
+    <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor="#020066" barStyle="light-content" />
+      {/* Header drawer */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.toggleDrawer()} style={styles.menuButton}>
+          <Ionicons name="menu" size={28} color="#F4CE23" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Élections</Text>
+        <View style={{ width: 28 }} />
+      </View>
+
+      <FlatList
+        data={elections}
+        keyExtractor={e => e.id}
+        renderItem={renderElection}
+        contentContainerStyle={styles.list}
+        style={{ flex: 1 }}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7fa',marginBottom:35, },
+  container: { flex: 1, backgroundColor: '#f5f7fa' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#020066',
+    padding: 12,
+  },
+  menuButton: { marginRight: 12 },
+  headerTitle: { flex: 1, color: '#F4CE23', fontSize: 20, fontWeight: '700' },
+
   list: { padding: 16 },
 
   card: {
@@ -204,7 +229,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: { fontSize: 20, fontWeight: '700', color: '#333' },
-  date: { fontSize: 14, color: '#666', marginBottom: 12 },
+  date: { fontSize: 14, color: '#666', marginVertical: 8 },
 
   toggleBtn: {
     paddingHorizontal: 12,
@@ -214,12 +239,20 @@ const styles = StyleSheet.create({
   },
   toggleText: { color: '#fff', fontWeight: '600' },
 
+  instructionText: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+
   candidateCard: {
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 8,
     borderRadius: 12,
     padding: 8,
+    backgroundColor: '#fafafa',
   },
   avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 12 },
   info: { flex: 1 },
@@ -230,15 +263,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 12,
-    color: '#222',
     fontSize: 12,
     fontWeight: '500',
-  },
-  instructionText: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 8,
-    fontStyle: 'italic',
+    color: '#222',
   },
   voteInfo: {
     flexDirection: 'row',

@@ -12,13 +12,19 @@ import {
   Platform,
   Alert,
   StatusBar,
-  ActivityIndicator
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
-import { signInWithEmailAndPassword, getIdToken, sendPasswordResetEmail } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword,
+  getIdToken,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { auth } from '../../config/firebase';
 import { saveToken } from '../../utils/secureStore';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
+import AlertModal from '../../components/AlertModal';
 
 const backgroundImage = require('../../../assets/bg-login.png');
 const logo = require('../../../assets/logo.png');
@@ -33,6 +39,20 @@ export default function SignIn({ navigation }: SignInProps) {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
+  // état pour AlertModal
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<'info' | 'success' | 'error'>('info');
+  const [modalMessage, setModalMessage] = useState('');
+
+  const showModal = (
+    type: 'info' | 'success' | 'error',
+    message: string
+  ) => {
+    setModalType(type);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
+
   const handleSignIn = async () => {
     if (loading) return;
     setLoading(true);
@@ -40,8 +60,15 @@ export default function SignIn({ navigation }: SignInProps) {
       const credential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await getIdToken(credential.user, true);
       await saveToken(idToken);
+      // navigation.replace('Home'); // décommenter si nécessaire
     } catch (error: any) {
-      Alert.alert('Erreur de connexion', error.message);
+      // Intercepte l’erreur “mot de passe manquant” et affiche un message générique
+      if (error.code === 'auth/missing-password' || error.code === 'auth/wrong-password') {
+        showModal('error', 'Email ou mot de passe incorrect.');
+      } else {
+        // Pour toutes les autres erreurs, on remonte le message natif
+        showModal('error', error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -49,13 +76,14 @@ export default function SignIn({ navigation }: SignInProps) {
 
   const handleForgotPassword = async () => {
     if (!email) {
-      return Alert.alert('Email requis', 'Veuillez saisir votre email pour réinitialiser votre mot de passe.');
+      showModal('info', 'Veuillez saisir votre email pour réinitialiser votre mot de passe.');
+      return;
     }
     try {
       await sendPasswordResetEmail(auth, email);
-      Alert.alert('Email envoyé', 'Un lien de réinitialisation a été envoyé à votre adresse.');
+      showModal('success', 'Un lien de réinitialisation a été envoyé à votre adresse.');
     } catch (error: any) {
-      Alert.alert('Erreur', error.message);
+      showModal('error', error.message);
     }
   };
 
@@ -67,7 +95,10 @@ export default function SignIn({ navigation }: SignInProps) {
       <StatusBar backgroundColor="#020066" barStyle="light-content" />
       <ImageBackground source={backgroundImage} style={styles.background}>
         <View style={styles.overlay} />
-        <View style={styles.content}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           <Image source={logo} style={styles.logo} />
           <Text style={styles.title}>Bienvenue sur AJEUTCHIM</Text>
 
@@ -81,7 +112,7 @@ export default function SignIn({ navigation }: SignInProps) {
             onChangeText={setEmail}
           />
 
-<View style={styles.passwordInputContainer}>
+          <View style={styles.passwordInputContainer}>
             <TextInput
               style={styles.input}
               placeholder="Mot de passe"
@@ -92,8 +123,13 @@ export default function SignIn({ navigation }: SignInProps) {
               textContentType="newPassword"
               autoComplete="password-new"
             />
-            <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)} style={styles.iconContainer}>
-              <Text style={styles.eyeIcon}>{passwordVisible ? '👁️' : '🙈'}</Text>
+            <TouchableOpacity
+              onPress={() => setPasswordVisible(!passwordVisible)}
+              style={styles.iconContainer}
+            >
+              <Text style={styles.eyeIcon}>
+                {passwordVisible ? '👁️' : '🙈'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -101,49 +137,52 @@ export default function SignIn({ navigation }: SignInProps) {
             <Text style={styles.forgotLink}>Mot de passe oublié ?</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.button, loading && { opacity: 0.7 }]} onPress={handleSignIn} activeOpacity={0.8} disabled={loading}>
-          {loading ? (
-              <ActivityIndicator
-                size="small"
-                color="#020066"
-              />
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleSignIn}
+            activeOpacity={0.8}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#020066" />
             ) : (
-              <Text style={styles.buttonText}>
-                Se connecter
-              </Text>
+              <Text style={styles.buttonText}>Se connecter</Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
             <Text style={styles.link}>Pas encore de compte ? Inscrivez-vous</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </ImageBackground>
+      {/* Modal d'alerte centralisé */}
+      <AlertModal
+        visible={modalVisible}
+        type={modalType}
+        message={modalMessage}
+        onClose={() => setModalVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  background: {
-    flex: 1,
-    resizeMode: 'cover',
-  },
+  background: { flex: 1, resizeMode: 'cover' },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(2, 0, 102, 0.6)'
+    backgroundColor: 'rgba(2, 0, 102, 0.6)',
   },
   content: {
-    flex: 1,
-    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    paddingHorizontal: 24
   },
   logo: {
     width: 200,
     height: 200,
     marginBottom: 16,
-    borderRadius: 50
+    borderRadius: 50,
   },
   title: {
     fontSize: 22,
@@ -152,17 +191,17 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     textShadowColor: '#000',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 4
+    textShadowRadius: 4,
   },
   passwordInputContainer: {
     position: 'relative',
-    marginBottom: 15,
     width: '100%',
+    marginBottom: 16,
   },
   iconContainer: {
     position: 'absolute',
-    right: 15,
-    top: 12,
+    right: 20,
+    top: 14,
   },
   eyeIcon: {
     fontSize: 22,
@@ -175,14 +214,14 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     paddingHorizontal: 20,
     marginBottom: 16,
-    color: '#fff'
+    color: '#fff',
   },
   forgotLink: {
     color: '#F4CE23',
     alignSelf: 'flex-end',
-    marginRight: 48,
+    marginRight: 16,
     marginBottom: 16,
-    textDecorationLine: 'underline'
+    textDecorationLine: 'underline',
   },
   button: {
     width: '100%',
@@ -195,16 +234,19 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 4
+    shadowRadius: 4,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
     color: '#020066',
     fontSize: 18,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   link: {
     color: '#fff',
     marginTop: 8,
-    textDecorationLine: 'underline'
-  }
+    textDecorationLine: 'underline',
+  },
 });

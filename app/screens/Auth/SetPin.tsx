@@ -6,12 +6,13 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,                // ← ajouté
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ImageBackground,
   Image,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import { savePin } from '../../utils/secureStore';
 
@@ -26,7 +27,9 @@ export default function SetPin({ navigation }: any) {
     if (pin.length !== 4 || !/^\d+$/.test(pin)) {
       return Alert.alert('PIN invalide', 'Le PIN doit être composé de 4 chiffres.');
     }
+    setLoading(true);
     await savePin(pin);
+    setLoading(false);
     navigation.replace('Home');
   };
 
@@ -37,10 +40,12 @@ export default function SetPin({ navigation }: any) {
     >
       <StatusBar backgroundColor="#020066" barStyle="light-content" />
       <ImageBackground source={backgroundImage} style={styles.background}>
-        {/* Overlay pour assombrir le fond */}
         <View style={styles.overlay} />
 
-        <View style={styles.innerContainer}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           <Image source={logo} style={styles.logo} />
 
           <View style={styles.card}>
@@ -50,19 +55,25 @@ export default function SetPin({ navigation }: any) {
             <TextInput
               style={styles.input}
               placeholder="••••"
+              placeholderTextColor="#999"
               keyboardType="numeric"
               maxLength={4}
               secureTextEntry
               onChangeText={setPin}
               value={pin}
-              placeholderTextColor="#ccc"
             />
 
-            <TouchableOpacity style={styles.button} onPress={handleSavePin}>
-              <Text style={styles.buttonText}>Enregistrer le PIN</Text>
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleSavePin}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? 'Enregistrement...' : 'Enregistrer le PIN'}
+              </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       </ImageBackground>
     </KeyboardAvoidingView>
   );
@@ -70,28 +81,24 @@ export default function SetPin({ navigation }: any) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-
-  background: {
-    flex: 1,
-    resizeMode: 'cover',
-    justifyContent: 'center',
-  },
+  background: { flex: 1, resizeMode: 'cover' },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(2, 0, 102, 0.4)',
   },
-  innerContainer: {
-    flex: 1,
+
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
 
   logo: {
-    width: 200,
-    height: 200,
+    width: 160,
+    height: 160,
     marginBottom: 24,
-    borderRadius: 50,
+    borderRadius: 80,
     zIndex: 1,
   },
 
@@ -100,23 +107,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4CE23',
     borderRadius: 16,
     padding: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 6,
     alignItems: 'center',
-    zIndex: 2,
+    elevation: 6,
   },
 
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: '#2e2e2e',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#444',
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -131,8 +134,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
     marginBottom: 24,
-    color: '#333',
     backgroundColor: '#fff',
+    color: '#333',
   },
 
   button: {
@@ -140,6 +143,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 12,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
     color: '#fff',
